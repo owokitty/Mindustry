@@ -31,6 +31,6 @@ jobs:
       uses: svenstaro/upload-release-action@v2
       with:
         repo_token: ${{ secrets.GITHUB_TOKEN }}
-        file: android/build/outputs/apk/debug/app-debug.apk
+        file: android/build/outputs/apk/debug/android-debug.apk
         tag: ${{ github.ref }}
 
