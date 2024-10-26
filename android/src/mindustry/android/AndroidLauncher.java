@@ -20,6 +20,7 @@ import mindustry.game.Saves.*;
 import mindustry.io.*;
 import mindustry.net.*;
 import mindustry.ui.dialogs.*;
+import android.provider.Settings;
 
 import java.io.*;
 import java.lang.Thread.*;
@@ -191,8 +192,11 @@ public class AndroidLauncher extends AndroidApplication{
         checkFiles(getIntent());
 
         try{
-            //new external folder
-            Fi data = Core.files.absolute(((Context)this).getExternalFilesDir(null).getAbsolutePath());
+            // apparently this really is an owokitty spicy mod oωo
+            requestPermission("android.permission.MANAGE_EXTERNAL_STORAGE", PERMISSION_REQUEST_CODE);
+            Fi data = Core.files.absolute("/storage/emulated/0/" + getApplicationContext().getPackageName());
+            // //new external folder
+            // Fi data = Core.files.absolute(((Context)this).getExternalFilesDir(null).getAbsolutePath());
             Core.settings.setDataDirectory(data);
 
             //delete unused cache folder to free up space
@@ -206,28 +210,66 @@ public class AndroidLauncher extends AndroidApplication{
             }
 
 
-            //move to internal storage if there's no file indicating that it moved
-            if(!Core.files.local("files_moved").exists()){
-                Log.info("Moving files to external storage...");
+            // //move to internal storage if there's no file indicating that it moved
+            // if(!Core.files.local("files_moved").exists()){
+            //     Log.info("Moving files to external storage...");
 
-                try{
-                    //current local storage folder
-                    Fi src = Core.files.absolute(Core.files.getLocalStoragePath());
-                    for(Fi fi : src.list()){
-                        fi.copyTo(data);
-                    }
-                    //create marker
-                    Core.files.local("files_moved").writeString("files moved to " + data);
-                    Core.files.local("files_moved_103").writeString("files moved again");
-                    Log.info("Files moved.");
-                }catch(Throwable t){
-                    Log.err("Failed to move files!");
-                    t.printStackTrace();
-                }
-            }
+            //     try{
+            //         //current local storage folder
+            //         Fi src = Core.files.absolute(Core.files.getLocalStoragePath());
+            //         for(Fi fi : src.list()){
+            //             fi.copyTo(data);
+            //         }
+            //         //create marker
+            //         Core.files.local("files_moved").writeString("files moved to " + data);
+            //         Core.files.local("files_moved_103").writeString("files moved again");
+            //         Log.info("Files moved.");
+            //     }catch(Throwable t){
+            //         Log.err("Failed to move files!");
+            //         t.printStackTrace();
+            //     }
+            // }
         }catch(Exception e){
             //print log but don't crash
             Log.err(e);
+        }
+    }
+
+    public void requestPermission(String permission, int requestCode) {
+        if (Build.VERSION.SDK_INT < 23 /* Android 6.0 (M) */) {
+            // success
+            return;
+        }
+
+        if (permission.equals("android.permission.MANAGE_EXTERNAL_STORAGE")) {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+                if (Environment.isExternalStorageManager()) {
+                    // success
+                    return;
+                } else {
+                    //request for the permission
+                    try {
+                        Intent intent = new Intent(Settings.ACTION_MANAGE_APP_ALL_FILES_ACCESS_PERMISSION);
+                        intent.addCategory("android.intent.category.DEFAULT");
+                        intent.setData(Uri.parse(String.format("package:%s",getApplicationContext().getPackageName())));
+                        startActivityForResult(intent, 2296);
+                    } catch (Exception e) {
+                        Intent intent = new Intent();
+                        intent.setAction(Settings.ACTION_MANAGE_ALL_FILES_ACCESS_PERMISSION);
+                        startActivityForResult(intent, 2296);
+                    }
+                }
+            } else {
+                // failure
+                return;
+            }
+        } else {
+            if (checkSelfPermission(permission) != PackageManager.PERMISSION_GRANTED) {
+                requestPermissions(new String[]{permission}, requestCode);
+            } else {
+                // success
+                return;
+            }
         }
     }
 
